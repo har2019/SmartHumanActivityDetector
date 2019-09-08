@@ -42,3 +42,7 @@ dataset/
 
 #Jupyter checkpoints
 .ipynb_checkpoints/
+
+# output files
+training_data.csv
+testing_data.csv
