@@ -2,6 +2,7 @@
 import numpy as np 
 import pandas as pd 
 from scipy import signal
+from scipy.stats import randint as sp_randint
 import matplotlib.pyplot as plt 
 import math
 import time
@@ -9,6 +10,9 @@ from sklearn import preprocessing
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import make_scorer, accuracy_score, confusion_matrix
 from sklearn.svm import SVC
+from sklearn.model_selection import RandomizedSearchCV
+from sklearn.ensemble import RandomForestClassifier
+
 from sklearn.model_selection import GridSearchCV
 from Activity import Activity
 
@@ -21,7 +25,7 @@ TRAINING_DATA_OUTPUT = 'training_data.csv'
 TESTING_DATA_OUTPUT = 'testing_data.csv'
 
 class HumanActivityRecognition(object):
-    """This class is to provide a friendly interface to process DaLiAc Database, including data visulaization, noise removing, featuring, train and evaluation classification modal 
+    """This class is to provide a friendly interface to process DaLiAc Database, including data visulaization, noise removing, featuring, train and evaluation classification model 
     """
     def __init__(self, dataset_path: str):
         """ Initialize a new object with a give dataset path, the user doesn't care the exact path.
@@ -144,6 +148,13 @@ class HumanActivityRecognition(object):
         return sample_output
 
     def split_featured_dataset(self, data_path: str) -> tuple:
+        """ Read and split the feature dataset the feature columns and lable column
+            Args:
+                data_path (str): the feature dataset file path
+            Returns:
+                features (np.ndarray): the input dataset dropped label column
+                labels (np.ndarray): the lable data extract from input dataset
+        """
         df = pd.read_csv(data_path, header=None)
         # the number of columns, to straight-forward determine label column
         n = len(df.columns)
@@ -156,6 +167,14 @@ class HumanActivityRecognition(object):
         return (features, labels)
 
     def feature_normalization(self, X_train: np.ndarray, X_test: np.ndarray) -> tuple:
+        """ Normalize the feature data, using scaler in scikit
+            Args:
+                X_train (np.ndarray): the features of training dataset
+                X_test (np.ndarray): the features of testing dataset
+            Returns:
+                X_train (np.ndarray): normalized X_train
+                X_test (np.ndarray): normalized X_test
+        """
         # StandardScaler is used to scale original feature to be centered around zero.
         scaler = preprocessing.StandardScaler().fit(X_train)
         X_train = scaler.transform(X_train)
@@ -163,13 +182,20 @@ class HumanActivityRecognition(object):
         return (X_train, X_test)
 
     def classify_by_KNN(self, neighbors_number=3) -> tuple:
+        """ Using data processed with features to train classification model with KNN algorithm and evaluate the result
+            Args:
+                neighbors_number (int): the number of neighbors in KNN
+            Returns:
+                accuracy (float): the accurated prediction comparing with testing dataset
+                c_matrix (np.ndarray): represent the detailed classification of training and testing data
+        """
         X_train, y_train = self.split_featured_dataset(TRAINING_DATA_OUTPUT)
         X_test, y_test = self.split_featured_dataset(TESTING_DATA_OUTPUT)
 
         X_train, X_test = self.feature_normalization(X_train, X_test)
 
         start = time.time()
-        # Build KNN classifier, in this example code
+        # Build KNN classifier
         knn = KNeighborsClassifier(n_neighbors=neighbors_number)
         knn.fit(X_train, y_train)
 
@@ -179,18 +205,59 @@ class HumanActivityRecognition(object):
         accuracy = accuracy_score(y_test, y_pred)
         # We could use confusion matrix to view the classification for each activity.
         c_matrix = confusion_matrix(y_test, y_pred)
-        print("KNN: train and evaluate modal in {0:.3f}s".format(time.time() - start))
+        print("KNN: train and evaluate model in {0:.3f}s".format(time.time() - start))
         return (accuracy, c_matrix)
 
+    def classify_by_SVN(self, parameters, ) -> tuple:
+        """ Using data processed with features to train classification model with SVN algorithm and evaluate the result
+            Args:
+                parameters (list): the parameters used to search optimal classifier
+            Returns:
+                accuracy (float): the accurated prediction comparing with testing dataset
+                c_matrix (np.ndarray): represent the detailed classification of training and testing data
+        """
+        X_train, y_train = self.split_featured_dataset(TRAINING_DATA_OUTPUT)
+        X_test, y_test = self.split_featured_dataset(TESTING_DATA_OUTPUT)
 
+        X_train, X_test = self.feature_normalization(X_train, X_test)
+        start = time.time()
+
+        # Search for optimal classifier for SVN model
+        # acc_scorer = make_scorer(accuracy_score)
+        # grid_obj  = GridSearchCV(SVC(), parameters, cv=10, scoring=acc_scorer)
+        # grid_obj  = grid_obj.fit(X_train, y_train)
+        # clf = grid_obj.best_estimator_
+        # print('best clf:', clf)
+        n_iter_search = 20
+        clf = RandomizedSearchCV(RandomForestClassifier(n_estimators=20), param_distributions=parameters,
+                                   n_iter=n_iter_search, cv=5, iid=False)
+        
+        clf.fit(X_train, y_train)
+        y_pred = clf.predict(X_test)
+        accuracy = accuracy_score(y_test, y_pred)
+        # We could use confusion matrix to view the classification for each activity.
+        c_matrix = confusion_matrix(y_test, y_pred)
+        print("SVN: train and evaluate model in {0:.3f}s".format(time.time() - start))
+        return (accuracy, c_matrix)
 
 if __name__ == '__main__':
     har = HumanActivityRecognition("dataset/")
-    # har.data_visulization(1)
-    # df = har.read_dataset_as_pd(Activity.SITTING)
+    # har.data_visulization(Activity.SITTING, 1)
+    # df = har.read_dataset_as_pd(1)
     # df_activity = df[df[24] == Activity.SITTING.value].values
     # df_activity = har.noise_removing(df_activity)
     # plt.plot(df_activity[:, range(COLUMN_NUM-1)])
     # plt.show()
     # har.feature_selection()
-    print(har.classify_by_KNN(10))
+    # print(har.classify_by_KNN(10))
+    # tuned_parameters = [{'kernel': ['rbf'], 'gamma': [1e-1,1e-2, 1e-3, 1e-4],
+    #                  'C': [1e-3, 1e-2, 1e-1, 1, 10, 100, 100]},
+    #                 {'kernel': ['linear'], 'C': [1e-3, 1e-2, 1e-1, 1, 10, 100]}]
+
+    tuned_parameters = {"max_depth": [3, None],
+              "max_features": sp_randint(1, 11),
+              "min_samples_split": sp_randint(2, 11),
+              "bootstrap": [True, False],
+              "criterion": ["gini", "entropy"]}
+
+    print(har.classify_by_SVN(tuned_parameters))
