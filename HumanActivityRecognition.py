@@ -89,7 +89,7 @@ class HumanActivityRecognition(object):
         training = np.empty(shape=(0, len(columns)*3 + 1))
         testing = np.empty(shape=(0, len(columns)*3 + 1))
         # deal with each dataset file
-        print("{} datasets is processing...".format(DATASET_NUM))
+        print("{} datasets are processing...".format(DATASET_NUM))
         start = time.time()
         for i in range(DATASET_NUM):
             df = self.read_dataset_as_pd(i+1)
@@ -208,7 +208,7 @@ class HumanActivityRecognition(object):
         print("KNN: train and evaluate model in {0:.3f}s".format(time.time() - start))
         return (accuracy, c_matrix)
 
-    def classify_by_SVN(self, parameters, ) -> tuple:
+    def classify_by_SVN(self, parameters) -> tuple:
         """ Using data processed with features to train classification model with SVN algorithm and evaluate the result
             Args:
                 parameters (list): the parameters used to search optimal classifier
@@ -261,3 +261,4 @@ if __name__ == '__main__':
               "criterion": ["gini", "entropy"]}
 
     print(har.classify_by_SVN(tuned_parameters))
+
