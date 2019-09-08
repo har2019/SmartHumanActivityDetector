@@ -4,6 +4,7 @@ import pandas as pd
 from scipy import signal
 import matplotlib.pyplot as plt 
 import math
+import time
 from sklearn import preprocessing
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import make_scorer, accuracy_score, confusion_matrix
@@ -85,6 +86,7 @@ class HumanActivityRecognition(object):
         testing = np.empty(shape=(0, len(columns)*3 + 1))
         # deal with each dataset file
         print("{} datasets is processing...".format(DATASET_NUM))
+        start = time.time()
         for i in range(DATASET_NUM):
             df = self.read_dataset_as_pd(i+1)
             for activity in list(Activity):
@@ -113,6 +115,7 @@ class HumanActivityRecognition(object):
         df_testing.to_csv(TESTING_DATA_OUTPUT, index=None, header=None)
         print("Training data is output into {}".format(TRAINING_DATA_OUTPUT))
         print("Testing data is output into {}".format(TESTING_DATA_OUTPUT))
+        print("Feature selection and extraction finished in {0:.3f}s".format(time.time() - start))
 
     def sample_data(self, data: np.ndarray, sample_number:int, columns=range(COLUMN_NUM-1)) -> np.ndarray:
         """ Split dataset into given number of segments and for each segment, calculate is max, min and mean value as features
@@ -140,6 +143,44 @@ class HumanActivityRecognition(object):
             sample_output = np.concatenate((sample_output, sample_segment), axis=0)
         return sample_output
 
+    def split_featured_dataset(self, data_path: str) -> tuple:
+        df = pd.read_csv(data_path, header=None)
+        # the number of columns, to straight-forward determine label column
+        n = len(df.columns)
+
+        labels = df[n-1].values
+        # Labels should start from 0 in sklearn
+        labels = labels - 1
+        df = df.drop([n-1], axis=1)
+        features = df.values
+        return (features, labels)
+
+    def feature_normalization(self, X_train: np.ndarray, X_test: np.ndarray) -> tuple:
+        # StandardScaler is used to scale original feature to be centered around zero.
+        scaler = preprocessing.StandardScaler().fit(X_train)
+        X_train = scaler.transform(X_train)
+        X_test = scaler.transform(X_test)
+        return (X_train, X_test)
+
+    def classify_by_KNN(self, neighbors_number=3) -> tuple:
+        X_train, y_train = self.split_featured_dataset(TRAINING_DATA_OUTPUT)
+        X_test, y_test = self.split_featured_dataset(TESTING_DATA_OUTPUT)
+
+        X_train, X_test = self.feature_normalization(X_train, X_test)
+
+        start = time.time()
+        # Build KNN classifier, in this example code
+        knn = KNeighborsClassifier(n_neighbors=neighbors_number)
+        knn.fit(X_train, y_train)
+
+        # Evaluation. when we train a machine learning model on training set, we should evaluate its performance on testing set.
+        # We could evaluate the model by different metrics. Firstly, we could calculate the classification accuracy.
+        y_pred = knn.predict(X_test)
+        accuracy = accuracy_score(y_test, y_pred)
+        # We could use confusion matrix to view the classification for each activity.
+        c_matrix = confusion_matrix(y_test, y_pred)
+        print("KNN: train and evaluate modal in {0:.3f}s".format(time.time() - start))
+        return (accuracy, c_matrix)
 
 
 
@@ -151,4 +192,5 @@ if __name__ == '__main__':
     # df_activity = har.noise_removing(df_activity)
     # plt.plot(df_activity[:, range(COLUMN_NUM-1)])
     # plt.show()
-    har.feature_selection(columns=range(3))
+    # har.feature_selection()
+    print(har.classify_by_KNN(10))
