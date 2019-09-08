@@ -250,9 +250,6 @@ if __name__ == '__main__':
     # plt.show()
     # har.feature_selection()
     # print(har.classify_by_KNN(10))
-    # tuned_parameters = [{'kernel': ['rbf'], 'gamma': [1e-1,1e-2, 1e-3, 1e-4],
-    #                  'C': [1e-3, 1e-2, 1e-1, 1, 10, 100, 100]},
-    #                 {'kernel': ['linear'], 'C': [1e-3, 1e-2, 1e-1, 1, 10, 100]}]
 
     tuned_parameters = {"max_depth": [3, None],
               "max_features": sp_randint(1, 11),
