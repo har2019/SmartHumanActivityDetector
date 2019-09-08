@@ -6,9 +6,12 @@
 1. Download dataset from [DaLiAc – Daily Life Activities](https://www.mad.tf.fau.de/research/activitynet/daliac-daily-life-activities/)
 2. Unzip the dataset file
 
+## Install Dependencies
+`pip install -r requirements.txt`
+
 ## Run
 Sample code to run it:
-```
+```python
 from Activity import Activity
 
 if __name__ == '__main__':
