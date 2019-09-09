@@ -208,8 +208,8 @@ class HumanActivityRecognition(object):
         print("KNN: train and evaluate model in {0:.3f}s".format(time.time() - start))
         return (accuracy, c_matrix)
 
-    def classify_by_SVN(self, parameters) -> tuple:
-        """ Using data processed with features to train classification model with SVN algorithm and evaluate the result
+    def classify_by_SVM(self, parameters) -> tuple:
+        """ Using data processed with features to train classification model with SVM algorithm and evaluate the result
             Args:
                 parameters (list): the parameters used to search optimal classifier
             Returns:
@@ -222,7 +222,7 @@ class HumanActivityRecognition(object):
         X_train, X_test = self.feature_normalization(X_train, X_test)
         start = time.time()
 
-        # Search for optimal classifier for SVN model
+        # Search for optimal classifier for SVM model
         # acc_scorer = make_scorer(accuracy_score)
         # grid_obj  = GridSearchCV(SVC(), parameters, cv=10, scoring=acc_scorer)
         # grid_obj  = grid_obj.fit(X_train, y_train)
@@ -237,7 +237,7 @@ class HumanActivityRecognition(object):
         accuracy = accuracy_score(y_test, y_pred)
         # We could use confusion matrix to view the classification for each activity.
         c_matrix = confusion_matrix(y_test, y_pred)
-        print("SVN: train and evaluate model in {0:.3f}s".format(time.time() - start))
+        print("SVM: train and evaluate model in {0:.3f}s".format(time.time() - start))
         return (accuracy, c_matrix)
 
 if __name__ == '__main__':
@@ -248,7 +248,7 @@ if __name__ == '__main__':
     # df_activity = har.noise_removing(df_activity)
     # plt.plot(df_activity[:, range(COLUMN_NUM-1)])
     # plt.show()
-    # har.feature_selection()
+    har.feature_selection()
     # print(har.classify_by_KNN(10))
 
     tuned_parameters = {"max_depth": [3, None],
@@ -257,5 +257,5 @@ if __name__ == '__main__':
               "bootstrap": [True, False],
               "criterion": ["gini", "entropy"]}
 
-    print(har.classify_by_SVN(tuned_parameters))
+    print(har.classify_by_SVM(tuned_parameters))
 
